@@ -10,6 +10,7 @@ using System.Windows.Forms;
 using Opc.Da;
 using Opc;
 using System.IO;
+using System.Collections;
 
 namespace provaOPC
 {
@@ -189,36 +190,39 @@ namespace provaOPC
         {
             StreamReader File = new StreamReader(textBoxPath.Text);
             string Ppm = openFileDialog1.SafeFileName.Split('_')[0];
-            File.ReadLine();//Salto la prima...
-            File.ReadLine();//... e la seconda riga perchè sono legende
+            File.ReadLine();//Salto la prima,...
+            File.ReadLine();//...la seconda,...
+            File.ReadLine();//...la terza...
+            File.ReadLine();//... e la quarta riga perchè sono legende
             string[] Line = new string[5];
-            double[] PosNow = new double[1250];
-            double[] VelNow = new double[1250];
-            double[] CorNow = new double[1250];
+            int LengthArray = 100;
+            int Total = 1200;
+            float[] PosNow = new float[LengthArray];
+            float[] VelNow = new float[LengthArray];
+            float[] CorNow = new float[LengthArray];
             double progresso = 0.0;
             progressBar1.Value = 0;
 
-            float[] test = { (float)1.0, (float)1.0 };
-
-            RsLinx_OPC_Client_Write_Array($"[{textBoxTopic.Text}]Prova",2, test);
-            int LengthArray = 120;
-
-            for (int i = 0; i < PosNow.Length; i++)
+            float[] test = { (float)1.22, (float)2.3, (float)2.3, (float)2.3 };
+            
+            for (int i = 0; i < Total / LengthArray; i++)
             {
-                Line = File.ReadLine().Split('\t');//Leggo la linea
-                PosNow[i] = float.Parse(Line[1]);//0 Time, 1 Pos, 2 Vel, 3 Cor
-                VelNow[i] = float.Parse(Line[2]);
-                CorNow[i] = float.Parse(Line[3]);
-        }
+                for (int j = 0; j < LengthArray; j++)
+                {
+                    Line = File.ReadLine().Split('\t');//Leggo la linea
+                    PosNow[j] = float.Parse(Line[1]);//0 Time, 1 Pos, 2 Vel, 3 Cor
+                    VelNow[j] = float.Parse(Line[2]);
+                    CorNow[j] = float.Parse(Line[3]);
+                }
 
-            for (int i = 0; i < PosNow.Length/LengthArray; i++)
-            {
-                RsLinx_OPC_Client_Write_Array($"[{textBoxTopic.Text}]Posizione_{Ppm}[{i* LengthArray}]", LengthArray,);
-                RsLinx_OPC_Client_Write($"[{textBoxTopic.Text}]Velocita_{Ppm}[{i * LengthArray}]", LengthArray,);
-                RsLinx_OPC_Client_Write($"[{textBoxTopic.Text}]Corrente_{Ppm}[{i * LengthArray}]", LengthArray,);
+                RsLinx_OPC_Client_Write_Array($"[{textBoxTopic.Text}]Posizione_{Ppm}[{i * LengthArray}]", LengthArray, (float[]) PosNow);
+                RsLinx_OPC_Client_Write_Array($"[{textBoxTopic.Text}]Velocita_{Ppm}[{i * LengthArray}]", LengthArray, (float[]) VelNow);
+                RsLinx_OPC_Client_Write_Array($"[{textBoxTopic.Text}]Corrente_{Ppm}[{i * LengthArray}]", LengthArray, (float[]) CorNow);
                 progresso += (double) progressBar1.Maximum / LengthArray;
                 progressBar1.Value = (int) progresso;
             }
+
+            File.Close();
             progressBar1.Value = 100;
             textBoxPath.BackColor = Color.LightGreen;
         }
