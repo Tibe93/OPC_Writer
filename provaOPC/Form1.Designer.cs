@@ -31,15 +31,15 @@
             this.butScrivi = new System.Windows.Forms.Button();
             this.butPath = new System.Windows.Forms.Button();
             this.textBoxPath = new System.Windows.Forms.TextBox();
-            this.textBoxArray = new System.Windows.Forms.TextBox();
             this.openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
             this.textBoxTopic = new System.Windows.Forms.TextBox();
+            this.progressBar1 = new System.Windows.Forms.ProgressBar();
             this.SuspendLayout();
             // 
             // butScrivi
             // 
             this.butScrivi.Enabled = false;
-            this.butScrivi.Location = new System.Drawing.Point(267, 69);
+            this.butScrivi.Location = new System.Drawing.Point(267, 41);
             this.butScrivi.Name = "butScrivi";
             this.butScrivi.Size = new System.Drawing.Size(53, 23);
             this.butScrivi.TabIndex = 0;
@@ -67,18 +67,6 @@
             this.textBoxPath.Text = "Selezionare il file .CSV da scrivere";
             this.textBoxPath.TextChanged += new System.EventHandler(this.textBoxPath_TextChanged);
             // 
-            // textBoxArray
-            // 
-            this.textBoxArray.Enabled = false;
-            this.textBoxArray.Location = new System.Drawing.Point(13, 41);
-            this.textBoxArray.Name = "textBoxArray";
-            this.textBoxArray.Size = new System.Drawing.Size(307, 22);
-            this.textBoxArray.TabIndex = 3;
-            this.textBoxArray.Text = "Inserire il nome dell\'Array su cui scrivere";
-            this.textBoxArray.Click += new System.EventHandler(this.textBoxArray_Click);
-            this.textBoxArray.TextChanged += new System.EventHandler(this.textBoxArray_TextChanged);
-            this.textBoxArray.Leave += new System.EventHandler(this.textBoxArray_Leave);
-            // 
             // openFileDialog1
             // 
             this.openFileDialog1.FileName = "openFileDialog1";
@@ -86,7 +74,7 @@
             // textBoxTopic
             // 
             this.textBoxTopic.Enabled = false;
-            this.textBoxTopic.Location = new System.Drawing.Point(13, 70);
+            this.textBoxTopic.Location = new System.Drawing.Point(12, 41);
             this.textBoxTopic.Name = "textBoxTopic";
             this.textBoxTopic.Size = new System.Drawing.Size(248, 22);
             this.textBoxTopic.TabIndex = 4;
@@ -95,13 +83,21 @@
             this.textBoxTopic.TextChanged += new System.EventHandler(this.textBoxTopic_TextChanged);
             this.textBoxTopic.Leave += new System.EventHandler(this.textBoxTopic_Leave);
             // 
+            // progressBar1
+            // 
+            this.progressBar1.Location = new System.Drawing.Point(13, 67);
+            this.progressBar1.Name = "progressBar1";
+            this.progressBar1.Size = new System.Drawing.Size(307, 23);
+            this.progressBar1.Step = 1;
+            this.progressBar1.TabIndex = 5;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(332, 102);
+            this.Controls.Add(this.progressBar1);
             this.Controls.Add(this.textBoxTopic);
-            this.Controls.Add(this.textBoxArray);
             this.Controls.Add(this.textBoxPath);
             this.Controls.Add(this.butPath);
             this.Controls.Add(this.butScrivi);
@@ -119,9 +115,9 @@
         private System.Windows.Forms.Button butScrivi;
         private System.Windows.Forms.Button butPath;
         private System.Windows.Forms.TextBox textBoxPath;
-        private System.Windows.Forms.TextBox textBoxArray;
         private System.Windows.Forms.OpenFileDialog openFileDialog1;
         private System.Windows.Forms.TextBox textBoxTopic;
+        private System.Windows.Forms.ProgressBar progressBar1;
     }
 }
 

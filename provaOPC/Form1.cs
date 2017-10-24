@@ -109,13 +109,18 @@ namespace provaOPC
             File.ReadLine();//Salto la prima...
             File.ReadLine();//... e la seconda riga perchè sono legende
             string[] Line = new string[5];
+            double progresso = 0.0;
+            progressBar1.Value = 0;
             for (int i = 0; i < 1250; i++)
             {
                 Line = File.ReadLine().Split('\t');//Leggo la linea
                 RsLinx_OPC_Client_Write($"[{textBoxTopic.Text}]Posizione_{Ppm}[{i}]", float.Parse(Line[1]));//0 Time, 1 Pos, 2 Vel, 3 Cor
                 RsLinx_OPC_Client_Write($"[{textBoxTopic.Text}]Velocita_{Ppm}[{i}]", float.Parse(Line[2]));
                 RsLinx_OPC_Client_Write($"[{textBoxTopic.Text}]Corrente_{Ppm}[{i}]", float.Parse(Line[3]));
+                progresso += (double) 100 / 1250;
+                progressBar1.Value = (int) progresso;
             }
+            progressBar1.Value = 100;
         }
 
         private void butPath_Click(object sender, EventArgs e)
@@ -131,49 +136,20 @@ namespace provaOPC
             textBoxPath.BackColor = Color.White;
             if (!textBoxPath.Text.Equals("Inserire Path Salvataggio .CSV"))
             {
-                textBoxArray.Enabled = true;
-                textBoxArray.BackColor = Color.LightGreen;
-            }
-        }
-
-        private void textBoxArray_TextChanged(object sender, EventArgs e)
-        {
-            //Operazioni sulla grafica
-            if (!(textBoxArray.Text.Equals("Inserire il nome dell'Array su cui scrivere") || textBoxArray.Text.Equals("")))
-            {
                 textBoxTopic.Enabled = true;
-                if(!textBoxArray.Text.Equals("Inserire il nome del topic OPC"))
+                textBoxTopic.BackColor = Color.LightGreen;
+                if (textBoxTopic.Text.Equals("Creg_OPC_Topic"))
                 {
                     butScrivi.Enabled = true;
+                    textBoxTopic.BackColor = Color.White;
                 }
-            }
-            textBoxArray.BackColor = Color.White;
-        }
-
-        private void textBoxArray_Leave(object sender, EventArgs e)
-        {
-            //Operazioni sulla grafica
-            if (textBoxArray.Text.Equals(""))
-            {
-                textBoxArray.Text = "Inserire il nome dell'Array su cui scrivere";
-                textBoxArray.BackColor = Color.LightGreen;
-                textBoxTopic.Enabled = false;
-            }
-        }
-
-        private void textBoxArray_Click(object sender, EventArgs e)
-        {
-            //Operazioni sulla grafica
-            if(textBoxArray.Text.Equals("Inserire il nome dell'Array su cui scrivere"))
-            {
-                textBoxArray.Text = "";
             }
         }
 
         private void textBoxTopic_Click(object sender, EventArgs e)
         {
             //Operazioni sulla grafica
-            if (textBoxArray.Text.Equals("Inserire il nome del topic OPC"))
+            if (textBoxTopic.Text.Equals("Inserire il nome del topic OPC"))
             {
                 textBoxTopic.Text = "";
             }
