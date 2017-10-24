@@ -102,6 +102,89 @@ namespace provaOPC
             groupWrite.Write(writeValues);
         }
 
+        public static ItemValueResult[] RsLinx_OPC_Client_Read_Array(string ItemName, int Length)
+        {
+            Opc.Da.Server server;
+            OpcCom.Factory fact = new OpcCom.Factory();
+            Opc.Da.Subscription groupRead;
+            Opc.Da.SubscriptionState groupState;
+            Opc.Da.Item[] items = new Opc.Da.Item[1];
+            // 1st: Create a server object and connect to the RSLinx OPC Server
+            server = new Opc.Da.Server(fact, null);
+            server.Url = new Opc.URL("opcda://localhost/RSLinx OPC Server/{A05BB6D6-2F8A-11D1-9BB0-080009D01446}");
+
+            //2nd: Connect to the created server
+            server.Connect();
+
+            //3rd Create a group if items            
+            groupState = new Opc.Da.SubscriptionState();
+            groupState.Name = "Group";
+            groupState.UpdateRate = 1000;// this isthe time between every reads from OPC server
+            groupState.Active = true;//this must be true if you the group has to read value
+            groupRead = (Opc.Da.Subscription)server.CreateSubscription(groupState);
+
+
+            // add items to the group    (in Rockwell names are identified like [Name of PLC in the server]ItemName)
+            items[0] = new Opc.Da.Item();
+            items[0].ItemName = $"{ItemName},L{Length}";
+
+            items = groupRead.AddItems(items);
+            return groupRead.Read(items);
+        }
+
+        public static void RsLinx_OPC_Client_Write_Array(string ItemName,int Lenght, float[] Value)
+        {
+            Opc.Da.Server server;
+            OpcCom.Factory fact = new OpcCom.Factory();
+            Opc.Da.Subscription groupWrite;
+            Opc.Da.SubscriptionState groupStateWrite;
+            Opc.Da.Item[] items = new Opc.Da.Item[1];
+            // 1st: Create a server object and connect to the RSLinx OPC Server
+            server = new Opc.Da.Server(fact, null);
+            server.Url = new Opc.URL("opcda://localhost/RSLinx OPC Server/{A05BB6D6-2F8A-11D1-9BB0-080009D01446}");
+
+            //2nd: Connect to the created server
+            server.Connect();
+
+            // Create a write group            
+            groupStateWrite = new Opc.Da.SubscriptionState();
+            groupStateWrite.Name = "Group Write";
+            groupStateWrite.Active = false;//not needed to read if you want to write only
+            groupWrite = (Opc.Da.Subscription)server.CreateSubscription(groupStateWrite);
+
+            //Create the item to write (if the group doesn't have it, we need to insert it)
+            Opc.Da.Item[] itemToAdd = new Opc.Da.Item[1];
+            itemToAdd[0] = new Opc.Da.Item();
+            itemToAdd[0].ItemName = $"{ItemName},L{Lenght}";
+
+            //create the item that contains the value to write
+            Opc.Da.ItemValue[] writeValues = new Opc.Da.ItemValue[1];
+            writeValues[0] = new Opc.Da.ItemValue(itemToAdd[0]);
+
+            //make a scan of group to see if it already contains the item
+            bool itemFound = false;
+            foreach (Opc.Da.Item item in groupWrite.Items)
+            {
+                if (item.ItemName == itemToAdd[0].ItemName)
+                {
+                    // if it find the item i set the new value
+                    writeValues[0].ServerHandle = item.ServerHandle;
+                    itemFound = true;
+                }
+            }
+            if (!itemFound)
+            {
+                //if it doesn't find it, we add it
+                groupWrite.AddItems(itemToAdd);
+                writeValues[0].ServerHandle = groupWrite.Items[groupWrite.Items.Length - 1].ServerHandle;
+            }
+            //set the value to write
+            writeValues[0].Value = Value;
+            //write
+            groupWrite.Write(writeValues);
+        }
+
+
         private void butScrivi_Click(object sender, EventArgs e)
         {
             StreamReader File = new StreamReader(textBoxPath.Text);
@@ -109,15 +192,31 @@ namespace provaOPC
             File.ReadLine();//Salto la prima...
             File.ReadLine();//... e la seconda riga perchè sono legende
             string[] Line = new string[5];
+            double[] PosNow = new double[1250];
+            double[] VelNow = new double[1250];
+            double[] CorNow = new double[1250];
             double progresso = 0.0;
             progressBar1.Value = 0;
-            for (int i = 0; i < 1250; i++)
+
+            float[] test = { (float)1.0, (float)1.0 };
+
+            RsLinx_OPC_Client_Write_Array($"[{textBoxTopic.Text}]Prova",2, test);
+            int LengthArray = 120;
+
+            for (int i = 0; i < PosNow.Length; i++)
             {
                 Line = File.ReadLine().Split('\t');//Leggo la linea
-                RsLinx_OPC_Client_Write($"[{textBoxTopic.Text}]Posizione_{Ppm}[{i}]", float.Parse(Line[1]));//0 Time, 1 Pos, 2 Vel, 3 Cor
-                RsLinx_OPC_Client_Write($"[{textBoxTopic.Text}]Velocita_{Ppm}[{i}]", float.Parse(Line[2]));
-                RsLinx_OPC_Client_Write($"[{textBoxTopic.Text}]Corrente_{Ppm}[{i}]", float.Parse(Line[3]));
-                progresso += (double) 100 / 1250;
+                PosNow[i] = float.Parse(Line[1]);//0 Time, 1 Pos, 2 Vel, 3 Cor
+                VelNow[i] = float.Parse(Line[2]);
+                CorNow[i] = float.Parse(Line[3]);
+        }
+
+            for (int i = 0; i < PosNow.Length/LengthArray; i++)
+            {
+                RsLinx_OPC_Client_Write_Array($"[{textBoxTopic.Text}]Posizione_{Ppm}[{i* LengthArray}]", LengthArray,);
+                RsLinx_OPC_Client_Write($"[{textBoxTopic.Text}]Velocita_{Ppm}[{i * LengthArray}]", LengthArray,);
+                RsLinx_OPC_Client_Write($"[{textBoxTopic.Text}]Corrente_{Ppm}[{i * LengthArray}]", LengthArray,);
+                progresso += (double) progressBar1.Maximum / LengthArray;
                 progressBar1.Value = (int) progresso;
             }
             progressBar1.Value = 100;
