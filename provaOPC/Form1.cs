@@ -121,6 +121,7 @@ namespace provaOPC
                 progressBar1.Value = (int) progresso;
             }
             progressBar1.Value = 100;
+            textBoxPath.BackColor = Color.LightGreen;
         }
 
         private void butPath_Click(object sender, EventArgs e)

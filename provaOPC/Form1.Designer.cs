@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.butScrivi = new System.Windows.Forms.Button();
             this.butPath = new System.Windows.Forms.Button();
             this.textBoxPath = new System.Windows.Forms.TextBox();
@@ -101,10 +102,11 @@
             this.Controls.Add(this.textBoxPath);
             this.Controls.Add(this.butPath);
             this.Controls.Add(this.butScrivi);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximumSize = new System.Drawing.Size(350, 147);
             this.MinimumSize = new System.Drawing.Size(350, 147);
             this.Name = "Form1";
-            this.Text = "Form1";
+            this.Text = "OPC Writer";
             this.ResumeLayout(false);
             this.PerformLayout();
 
