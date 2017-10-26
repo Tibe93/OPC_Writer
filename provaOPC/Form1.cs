@@ -16,6 +16,9 @@ namespace provaOPC
 {
     public partial class Form1 : Form
     {
+        public static string Url = "opcda://localhost/RSLinx OPC Server/{A05BB6D6-2F8A-11D1-9BB0-080009D01446}"; // URL del Server OPC di RSLinx
+        public static int UpdateRate = 1000; // Tempo di aggiornamento dei gruppi dell'OPC
+
         public Form1()
         {
             InitializeComponent();
@@ -23,168 +26,250 @@ namespace provaOPC
 
         public static ItemValueResult RsLinx_OPC_Client_Read(string ItemName)
         {
-            Opc.Da.Server server;
-            OpcCom.Factory fact = new OpcCom.Factory();
-            Opc.Da.Subscription groupRead;
-            Opc.Da.SubscriptionState groupState;
-            Opc.Da.Item[] items = new Opc.Da.Item[1];
-            // 1st: Create a server object and connect to the RSLinx OPC Server
-            server = new Opc.Da.Server(fact, null);
-            server.Url = new Opc.URL("opcda://localhost/RSLinx OPC Server/{A05BB6D6-2F8A-11D1-9BB0-080009D01446}");
+            try
+            {
+                //Creo un istanza di OPC.server
+                Opc.Da.Server server;
+                //Parametro necessario alla connect
+                OpcCom.Factory fact = new OpcCom.Factory();
+                //Creo un istanza di Sottoscrizione
+                Opc.Da.Subscription groupRead;
+                //Creo un istanza di SubscriptionState, utile per controllare lo stato della sottoscrizione
+                Opc.Da.SubscriptionState groupState;
+                //Creo un array di OPC.Da.Item
+                Opc.Da.Item[] items = new Opc.Da.Item[1];
+                //Setto factory e url del server, come url utilizzo quello del RSLinx OPC Server
+                server = new Opc.Da.Server(fact, null);
+                server.Url = new Opc.URL(Url);
 
-            //2nd: Connect to the created server
-            server.Connect();
+                //Connetto il server
+                server.Connect();
 
-            //3rd Create a group if items            
-            groupState = new Opc.Da.SubscriptionState();
-            groupState.Name = "Group";
-            groupState.UpdateRate = 1000;// this isthe time between every reads from OPC server
-            groupState.Active = true;//this must be true if you the group has to read value
-            groupRead = (Opc.Da.Subscription)server.CreateSubscription(groupState);
+                //Istanzio la sottoscrizione           
+                groupState = new Opc.Da.SubscriptionState();
+                groupState.Name = "Group";
+                groupState.UpdateRate = UpdateRate;//Setto il tempo di Refresh del gruppo
+                groupState.Active = true;//Questo valore deve essere true se voglio aver la possibilità di leggere
+                //Creo il gruppo sul server
+                groupRead = (Opc.Da.Subscription)server.CreateSubscription(groupState);
 
+                //Istanzio l'Item
+                items[0] = new Opc.Da.Item();
+                //Gli do il nome (Rockwell utilizza questa formzattazione dei nomi [NomeTopicOPC]NomeTag es. [MyOPCTopic]Posizione)
+                items[0].ItemName = ItemName;
 
-            // add items to the group    (in Rockwell names are identified like [Name of PLC in the server]ItemName)
-            items[0] = new Opc.Da.Item();
-            items[0].ItemName = ItemName;
-
-            items = groupRead.AddItems(items);
-            return groupRead.Read(items)[0];
+                //Aggiungo l'oggetto al gruppo
+                items = groupRead.AddItems(items);
+                //Leggo il valore dell'item aggiunto
+                ItemValueResult Ritorno = groupRead.Read(items)[0];
+                //Controllo che la lettura sia andata a buon fine, se non è così lancio un'eccezione
+                if (!Ritorno.ResultID.Name.Name.Equals("S_OK"))
+                {
+                    throw new System.Exception("Errore lettura OPC Tag");
+                }
+                return groupRead.Read(items)[0];
+            }
+            catch (Exception ex)
+            {
+                //Se viene lanciata un'eccezione ritorno un ItemValueResult con valore -1 e mostro un Messagebox con l'errore
+                MessageBox.Show(ex.Message);
+                ItemValueResult Errore = new ItemValueResult();
+                Errore.Value = -1;
+                return Errore;
+            }
         }
 
-        public static void RsLinx_OPC_Client_Write(string ItemName, float Value)
+        public static void RsLinx_OPC_Client_Write(string ItemName, int Value)
         {
-            Opc.Da.Server server;
-            OpcCom.Factory fact = new OpcCom.Factory();
-            Opc.Da.Subscription groupWrite;
-            Opc.Da.SubscriptionState groupStateWrite;
-            Opc.Da.Item[] items = new Opc.Da.Item[1];
-            // 1st: Create a server object and connect to the RSLinx OPC Server
-            server = new Opc.Da.Server(fact, null);
-            server.Url = new Opc.URL("opcda://localhost/RSLinx OPC Server/{A05BB6D6-2F8A-11D1-9BB0-080009D01446}");
-
-            //2nd: Connect to the created server
-            server.Connect();
-
-            // Create a write group            
-            groupStateWrite = new Opc.Da.SubscriptionState();
-            groupStateWrite.Name = "Group Write";
-            groupStateWrite.Active = false;//not needed to read if you want to write only
-            groupWrite = (Opc.Da.Subscription)server.CreateSubscription(groupStateWrite);
-
-            //Create the item to write (if the group doesn't have it, we need to insert it)
-            Opc.Da.Item[] itemToAdd = new Opc.Da.Item[1];
-            itemToAdd[0] = new Opc.Da.Item();
-            itemToAdd[0].ItemName = ItemName;
-
-            //create the item that contains the value to write
-            Opc.Da.ItemValue[] writeValues = new Opc.Da.ItemValue[1];
-            writeValues[0] = new Opc.Da.ItemValue(itemToAdd[0]);
-
-            //make a scan of group to see if it already contains the item
-            bool itemFound = false;
-            foreach (Opc.Da.Item item in groupWrite.Items)
+            try
             {
-                if (item.ItemName == itemToAdd[0].ItemName)
+                //Creo un istanza di OPC.server
+                Opc.Da.Server server;
+                //Parametro necessario alla connect
+                OpcCom.Factory fact = new OpcCom.Factory();
+                //Creo un istanza di Sottoscrizione
+                Opc.Da.Subscription groupWrite;
+                //Creo un istanza di SubscriptionState, utile per controllare lo stato della sottoscrizione
+                Opc.Da.SubscriptionState groupStateWrite;
+                //Creo un array di OPC.Da.Item
+                Opc.Da.Item[] items = new Opc.Da.Item[1];
+                //Setto factory e url del server, come url utilizzo quello del RSLinx OPC Server
+                server = new Opc.Da.Server(fact, null);
+                server.Url = new Opc.URL(Url);
+
+                //Connetto il server
+                server.Connect();
+
+                //Istanzio la sottoscrizione                    
+                groupStateWrite = new Opc.Da.SubscriptionState();
+                groupStateWrite.Name = "Group Write";
+                //Questo valore deve essere true se voglio aver la possibilità di leggere, se devo solo scrivere lo metto false
+                groupStateWrite.Active = false;
+                //Creo il gruppo sul server
+                groupWrite = (Opc.Da.Subscription)server.CreateSubscription(groupStateWrite);
+
+                //Creo l'Item da scrivere (se il gruppo non lo possiede, lo devo inserire)
+                Opc.Da.Item[] itemToAdd = new Opc.Da.Item[1];
+                itemToAdd[0] = new Opc.Da.Item();
+                itemToAdd[0].ItemName = ItemName;
+
+                //Creo l'istanza di ItemValue che possiede il mio Item e il valore che voglio assegnargli
+                Opc.Da.ItemValue[] writeValues = new Opc.Da.ItemValue[1];
+                writeValues[0] = new Opc.Da.ItemValue(itemToAdd[0]);
+
+                //Controllo se l'oggetto esiste nel gruppo
+                bool itemFound = false;
+                foreach (Opc.Da.Item item in groupWrite.Items)
                 {
-                    // if it find the item i set the new value
-                    writeValues[0].ServerHandle = item.ServerHandle;
-                    itemFound = true;
+                    if (item.ItemName == itemToAdd[0].ItemName)
+                    {
+                        //Se lo trovo gli setto il nuovo valore
+                        writeValues[0].ServerHandle = item.ServerHandle;
+                        itemFound = true;
+                    }
                 }
+                if (!itemFound)
+                {
+                    //Se non ho trovato l'oggetto nel gruppo lo aggiungo..
+                    groupWrite.AddItems(itemToAdd);
+                    writeValues[0].ServerHandle = groupWrite.Items[groupWrite.Items.Length - 1].ServerHandle;
+                }
+                //...gli setto il valore
+                writeValues[0].Value = Value;
+                //e lo scrivo
+                groupWrite.Write(writeValues);
             }
-            if (!itemFound)
+            catch (Exception ex)
             {
-                //if it doesn't find it, we add it
-                groupWrite.AddItems(itemToAdd);
-                writeValues[0].ServerHandle = groupWrite.Items[groupWrite.Items.Length - 1].ServerHandle;
+                //Se viene lanciata un'eccezione la mostro
+                MessageBox.Show(ex.Message);
             }
-            //set the value to write
-            writeValues[0].Value = Value;
-            //write
-            groupWrite.Write(writeValues);
         }
 
         public static ItemValueResult[] RsLinx_OPC_Client_Read_Array(string ItemName, int Length)
         {
-            Opc.Da.Server server;
-            OpcCom.Factory fact = new OpcCom.Factory();
-            Opc.Da.Subscription groupRead;
-            Opc.Da.SubscriptionState groupState;
-            Opc.Da.Item[] items = new Opc.Da.Item[1];
-            // 1st: Create a server object and connect to the RSLinx OPC Server
-            server = new Opc.Da.Server(fact, null);
-            server.Url = new Opc.URL("opcda://localhost/RSLinx OPC Server/{A05BB6D6-2F8A-11D1-9BB0-080009D01446}");
+            try
+            {
+                //Creo un istanza di OPC.server
+                Opc.Da.Server server;
+                //Parametro necessario alla connect
+                OpcCom.Factory fact = new OpcCom.Factory();
+                //Creo un istanza di Sottoscrizione
+                Opc.Da.Subscription groupRead;
+                //Creo un istanza di SubscriptionState, utile per controllare lo stato della sottoscrizione
+                Opc.Da.SubscriptionState groupState;
+                //Creo un array di OPC.Da.Item
+                Opc.Da.Item[] items = new Opc.Da.Item[1];
+                //Setto factory e url del server, come url utilizzo quello del RSLinx OPC Server
+                server = new Opc.Da.Server(fact, null);
+                server.Url = new Opc.URL(Url);
 
-            //2nd: Connect to the created server
-            server.Connect();
+                //Connetto il server
+                server.Connect();
 
-            //3rd Create a group if items            
-            groupState = new Opc.Da.SubscriptionState();
-            groupState.Name = "Group";
-            groupState.UpdateRate = 1000;// this isthe time between every reads from OPC server
-            groupState.Active = true;//this must be true if you the group has to read value
-            groupRead = (Opc.Da.Subscription)server.CreateSubscription(groupState);
+                //Istanzio la sottoscrizione           
+                groupState = new Opc.Da.SubscriptionState();
+                groupState.Name = "Group";
+                groupState.UpdateRate = UpdateRate;//Setto il tempo di Refresh del gruppo
+                groupState.Active = true;//Questo valore deve essere true se voglio aver la possibilità di leggere
+                //Creo il gruppo sul server
+                groupRead = (Opc.Da.Subscription)server.CreateSubscription(groupState);
+                //Istanzio l'Item
+                items[0] = new Opc.Da.Item();
+                //Gli do il nome (Rockwell utilizza questa formzattazione dei nomi per gli array
+                //[NomeTopicOPC]NomeTag,LDimensioneArray es. [MyOPCTopic]Posizione,L50)
+                items[0].ItemName = $"{ItemName},L{Length}";
 
+                //Aggiungo l'oggetto al gruppo
+                items = groupRead.AddItems(items);
+                //Leggo il valore dell'item aggiunto
+                ItemValueResult[] Ritorno = groupRead.Read(items);
 
-            // add items to the group    (in Rockwell names are identified like [Name of PLC in the server]ItemName)
-            items[0] = new Opc.Da.Item();
-            items[0].ItemName = $"{ItemName},L{Length}";
-
-            items = groupRead.AddItems(items);
-            return groupRead.Read(items);
+                //Controllo che la lettura dell'array sia andata a buon fine, se non è così lancio un'eccezione
+                if (!Ritorno[0].ResultID.Name.Name.Equals("S_OK"))
+                {
+                    throw new System.Exception("Errore lettura OPC Tag");
+                }
+                return groupRead.Read(items);
+            }
+            catch (Exception ex)
+            {
+                //Se viene lanciata un'eccezione ritorno un array di ItemValueResult con il primo che ha valore -1 e mostro un Messagebox con l'errore
+                MessageBox.Show(ex.Message);
+                ItemValueResult[] Errore = new ItemValueResult[1];
+                Errore[0] = new ItemValueResult();
+                float[] Err = { (float)-1, (float)-1 };
+                Errore[0].Value = Err;
+                return Errore;
+            }
         }
 
         public static void RsLinx_OPC_Client_Write_Array(string ItemName,int Lenght, float[] Value)
         {
-            Opc.Da.Server server;
-            OpcCom.Factory fact = new OpcCom.Factory();
-            Opc.Da.Subscription groupWrite;
-            Opc.Da.SubscriptionState groupStateWrite;
-            Opc.Da.Item[] items = new Opc.Da.Item[1];
-            // 1st: Create a server object and connect to the RSLinx OPC Server
-            server = new Opc.Da.Server(fact, null);
-            server.Url = new Opc.URL("opcda://localhost/RSLinx OPC Server/{A05BB6D6-2F8A-11D1-9BB0-080009D01446}");
-
-            //2nd: Connect to the created server
-            server.Connect();
-
-            // Create a write group            
-            groupStateWrite = new Opc.Da.SubscriptionState();
-            groupStateWrite.Name = "Group Write";
-            groupStateWrite.Active = false;//not needed to read if you want to write only
-            groupWrite = (Opc.Da.Subscription)server.CreateSubscription(groupStateWrite);
-
-            //Create the item to write (if the group doesn't have it, we need to insert it)
-            Opc.Da.Item[] itemToAdd = new Opc.Da.Item[1];
-            itemToAdd[0] = new Opc.Da.Item();
-            itemToAdd[0].ItemName = $"{ItemName},L{Lenght}";
-
-            //create the item that contains the value to write
-            Opc.Da.ItemValue[] writeValues = new Opc.Da.ItemValue[1];
-            writeValues[0] = new Opc.Da.ItemValue(itemToAdd[0]);
-
-            //make a scan of group to see if it already contains the item
-            bool itemFound = false;
-            foreach (Opc.Da.Item item in groupWrite.Items)
+            try
             {
-                if (item.ItemName == itemToAdd[0].ItemName)
+                //Creo un istanza di OPC.server
+                Opc.Da.Server server;
+                //Parametro necessario alla connect
+                OpcCom.Factory fact = new OpcCom.Factory();
+                //Creo un istanza di Sottoscrizione
+                Opc.Da.Subscription groupWrite;
+                //Creo un istanza di SubscriptionState, utile per controllare lo stato della sottoscrizione
+                Opc.Da.SubscriptionState groupStateWrite;
+                //Creo un array di OPC.Da.Item
+                Opc.Da.Item[] items = new Opc.Da.Item[1];
+                //Setto factory e url del server, come url utilizzo quello del RSLinx OPC Server
+                server = new Opc.Da.Server(fact, null);
+                server.Url = new Opc.URL(Url);
+
+                //Connetto il server
+                server.Connect();
+
+                //Istanzio la sottoscrizione                    
+                groupStateWrite = new Opc.Da.SubscriptionState();
+                groupStateWrite.Name = "Group Write";
+                //Questo valore deve essere true se voglio aver la possibilità di leggere, se devo solo scrivere lo metto false
+                groupStateWrite.Active = false;
+                //Creo il gruppo sul server
+                groupWrite = (Opc.Da.Subscription)server.CreateSubscription(groupStateWrite);
+
+                //Creo l'Item da scrivere (se il gruppo non lo possiede, lo devo inserire)
+                Opc.Da.Item[] itemToAdd = new Opc.Da.Item[1];
+                itemToAdd[0] = new Opc.Da.Item();
+                itemToAdd[0].ItemName = $"{ItemName},L{Lenght}";
+
+                //Creo l'istanza di ItemValue che possiede il mio Item e il valore che voglio assegnargli
+                Opc.Da.ItemValue[] writeValues = new Opc.Da.ItemValue[1];
+                writeValues[0] = new Opc.Da.ItemValue(itemToAdd[0]);
+
+                //Controllo se l'oggetto esiste nel gruppo
+                bool itemFound = false;
+                foreach (Opc.Da.Item item in groupWrite.Items)
                 {
-                    // if it find the item i set the new value
-                    writeValues[0].ServerHandle = item.ServerHandle;
-                    itemFound = true;
+                    if (item.ItemName == itemToAdd[0].ItemName)
+                    {
+                        //Se lo trovo gli setto il nuovo valore
+                        writeValues[0].ServerHandle = item.ServerHandle;
+                        itemFound = true;
+                    }
                 }
+                if (!itemFound)
+                {
+                    //Se non ho trovato l'oggetto nel gruppo lo aggiungo..
+                    groupWrite.AddItems(itemToAdd);
+                    writeValues[0].ServerHandle = groupWrite.Items[groupWrite.Items.Length - 1].ServerHandle;
+                }
+                //...gli setto il valore
+                writeValues[0].Value = Value;
+                //e lo scrivo
+                groupWrite.Write(writeValues);
             }
-            if (!itemFound)
+            catch (Exception ex)
             {
-                //if it doesn't find it, we add it
-                groupWrite.AddItems(itemToAdd);
-                writeValues[0].ServerHandle = groupWrite.Items[groupWrite.Items.Length - 1].ServerHandle;
+                //Se viene lanciata un'eccezione la mostro
+                MessageBox.Show(ex.Message);
             }
-            //set the value to write
-            writeValues[0].Value = Value;
-            //write
-            groupWrite.Write(writeValues);
         }
-
 
         private void butScrivi_Click(object sender, EventArgs e)
         {
